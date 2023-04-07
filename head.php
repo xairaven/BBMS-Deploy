@@ -13,4 +13,6 @@
     <script src="https://kit.fontawesome.com/a076d05399.js"></script>
     <link href="css/style.css" rel="stylesheet"/>
     <link rel="shortcut icon" type="image/jpeg" href="image/favicon.jpg">
+	<!--//logut buton in left up //-->
+    <a href="logout.php" class="nav-link">LogOut</a>
 </head>
