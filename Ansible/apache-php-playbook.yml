@@ -1,0 +1,42 @@
+---
+- name: Install Apache and PHP
+  hosts: web_server
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Install Apache
+      package:
+        name: apache2
+        state: present
+
+    - name: Install PHP and required modules
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - php
+        - libapache2-mod-php
+        # Add other necessary PHP modules
+
+    - name: Copy project files to Apache document root
+      synchronize:
+        src: /home/alex/Ansible-BBMS/src/
+        dest: /var/www/html
+      delegate_to: localhost
+
+    - name: Copy blood-bank.conf
+      synchronize:
+        src: /home/alex/Ansible-BBMS/blood-bank.conf
+        dest: /etc/apache2/sites-available/  # Apache document root path
+      delegate_to: localhost
+    
+    - name: Enable new site
+      shell: /usr/sbin/a2ensite blood-bank.conf
+      notify: Restart apache2
+
+    - name: Ensure apache is running
+      service: name=apache2 state=started enabled=yes
+  
+  handlers:
+    - name: Restart apache2
+      service: name=apache2 state=restarted

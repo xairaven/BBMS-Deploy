@@ -1,0 +1,96 @@
+---
+- hosts: db_server
+  gather_facts: true
+  become: true
+  vars:
+    mysql_username: alex
+    mysql_root_password: rootpass
+    deny_remote_connections: False
+  tasks:
+    - name: Install MySQL-Server
+      dnf:
+        name: mysql-server
+        state: latest
+        update_cache: true
+    
+    - name: Install python tools
+      dnf:
+        name: ['python-setuptools', 'python3-pip']
+        state: latest
+        update_cache: true
+
+    - name: Make sure pymysql is present
+      pip:
+        name: 'pymysql'
+        state: present
+    
+    - name: Start MySQL service
+      service:
+        name: mysqld
+        state: started
+        enabled: true
+
+    - name: Removes all anonymous user accounts
+      mysql_user:
+        login_user: 'root'
+        login_password: "{{ mysql_root_password }}"
+        name: ''
+        host_all: yes
+        state: absent
+
+    - name: Create database user with all database privileges
+      mysql_user:
+        login_user: 'root'
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mysql_username }}"
+        password: "{{ mysql_root_password }}"
+        priv: '*.*:ALL'
+        state: present
+
+    - name: Delete DB if exists
+      community.mysql.mysql_db:
+        login_user: 'root'
+        login_password: "{{ mysql_root_password }}"
+        name: bloodbank
+        state: absent
+
+    - name: Create DB
+      mysql_db:
+        name: "bloodbank"
+        login_user: '{{ mysql_username }}'
+        login_password: "{{ mysql_root_password }}"
+        state: present
+
+    - name: Enable remote login to mysql
+      lineinfile:
+         path: /etc/my.cnf
+         regexp: '^bind-address'
+         line: 'bind-address = 0.0.0.0'
+         backup: yes
+      notify:
+         - Restart mysql
+
+    - name: Setup firewall (Open port 3306)
+      ansible.posix.firewalld:
+        port: 3306/tcp
+        permanent: true
+        state: enabled
+
+    - name: Copy initial DB script
+      copy:
+        src: /home/alex/Ansible-BBMS/src/sql/bloodbank.sql
+        dest: /tmp/dump.sql
+      
+    - name: Executing initial DB script
+      mysql_db:
+        name: bloodbank
+        state: import
+        target: /tmp/dump.sql
+        login_user: alex
+        login_password: "{{ mysql_root_password }}"
+  
+  handlers:
+    - name: Restart mysql
+      service:
+        name: mysql
+        state: restarted

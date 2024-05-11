@@ -3,6 +3,7 @@
 **A fork of the project for honing deployment skills. The entire text below is the original description from the project authors. All rights to the project belong to its developers, as indicated in the "Team" section.**
 
 - [Docker](./Docker/)
+- [Ansible](./Ansible/)
 
 This website acts like a medium/an intermediate between hospitals/clinics and donors/receivers.
 
